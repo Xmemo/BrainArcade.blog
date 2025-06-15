@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Brain Arcade: Classic Retro Games for Brain Training & Focus</title>
+    <meta name="description" content="Play classic retro games in a distraction-free environment. Use our timer to warm-up your brain, improve focus, and get ready for deep work. Based on neuroscience.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+
+    <!-- Placeholder Comments -->
+    <!-- Chosen Palette: Retro Magazine (Off-white, Bold Red, Blue, Dark Gray) -->
+    <!-- Application Structure Plan: This final version of the "Magazine" style incorporates all user feedback. The README content is now prominently displayed at the top. The timer is a fully independent, draggable, and closable window, providing maximum user control and visibility. -->
+    <!-- Visualization & Content Choices: README content is now part of the initial HTML structure for immediate visibility and SEO. Timer logic creates a movable, closable window upon session start. Hover tooltips provide detailed game info. A retro sound effect is added for launching games. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            background-color: #F1F1F1; /* Retro Off-white */
+            color: #2c2c2c;
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+        }
+        .font-pixel { font-family: 'Press Start 2P', cursive; }
+        
+        /* New Magazine Style */
+        .readme-panel {
+            background-color: #EAEAEA;
+            border: 4px solid #2c2c2c;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 8px 8px 0px #9b9b9b;
+        }
+        .category-header {
+            background-color: #D62828; /* Bold Red */
+            color: white;
+            padding: 10px 20px;
+            clip-path: polygon(0 0, 95% 0, 100% 50%, 95% 100%, 0 100%);
+        }
+        
+        .game-cartridge {
+            background-color: #EAEAEA;
+            border: 4px solid #2c2c2c;
+            box-shadow: 6px 6px 0px #9b9b9b;
+            transition: transform 0.1s, box-shadow 0.1s;
+            cursor: pointer;
+        }
+        .game-cartridge:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 10px 10px 0px #9b9b9b;
+        }
+        .game-cartridge:active {
+            transform: translate(3px, 3px);
+            box-shadow: 3px 3px 0px #2c2c2c;
+        }
+        .cartridge-label {
+            background-color: #003049; /* Dark Blue */
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        .cartridge-grip {
+            border-top: 4px solid #2c2c2c;
+            padding: 5px;
+        }
+        .grip-line {
+            height: 4px;
+            background-color: #2c2c2c;
+            margin-bottom: 4px;
+        }
+
+        /* Game Modal */
+        #game-modal {
+            background-color: rgba(0,0,0,0.8);
+        }
+        #game-modal-content {
+            background-color: #2c2c2c;
+            border: 8px solid #F1F1F1;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Draggable Timer */
+        .timer-widget {
+            position: fixed;
+            background-color: #D62828;
+            color: white;
+            padding: 10px 15px;
+            border: 4px solid #2c2c2c;
+            box-shadow: 4px 4px 0px #2c2c2c;
+            z-index: 1000;
+            cursor: pointer;
+            text-align: center;
+        }
+        #timer-trigger {
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+        }
+        #timer-tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 250px;
+            background-color: #2c2c2c;
+            color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            text-align: left;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        #timer-trigger:hover #timer-tooltip {
+            display: block;
+        }
+        .timer-btn {
+             background-color: #003049;
+             color: white;
+             padding: 4px 8px;
+             margin: 4px;
+             font-size: 14px;
+        }
+        .timer-btn:hover {
+            background-color: #F77F00; /* Orange */
+        }
+        .floating-timer-window {
+            position: fixed;
+            display: none;
+            width: 220px;
+            background-color: #003049;
+            border: 4px solid #2c2c2c;
+            padding: 10px;
+            cursor: move;
+            z-index: 1001;
+            box-shadow: 6px 6px 0px #9b9b9b;
+        }
+        .timer-window-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .timer-window-title {
+            font-weight: bold;
+            color: #F1F1F1;
+        }
+        .timer-window-close {
+            background-color: #D62828;
+            color: white;
+            border: 2px solid #2c2c2c;
+            width: 20px;
+            height: 20px;
+            line-height: 16px;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        #game-info-tooltip {
+            position: absolute;
+            display: none;
+            background-color: #2c2c2c;
+            border: 4px solid #D62828;
+            color: #F1F1F1;
+            padding: 15px;
+            z-index: 10000;
+            pointer-events: none;
+            font-size: 16px;
+            white-space: pre-wrap;
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+            max-width: 350px;
+            line-height: 1.6;
+        }
+
+        .no-select {
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* NEW: Flashing animation for timer */
+        @keyframes flash {
+            0%, 100% { background-color: #003049; } /* Dark Blue */
+            50% { background-color: #D62828; }   /* Bold Red */
+        }
+        .timer-flash {
+            animation: flash 1s infinite;
+        }
+
+    </style>
+</head>
+<body class="no-select">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <!-- Header Section -->
+        <header class="text-center my-8">
+            <h1 class="font-pixel text-4xl md:text-6xl text-[#D62828] drop-shadow-[4px_4px_0_rgba(0,0,0,0.75)]">Brain Arcade</h1>
+            <p id="slogan" class="mt-4 text-xl md:text-2xl text-gray-700">Level Up Your Focus.</p>
+        </header>
+        
+        <!-- README Panel for Mission Briefing -->
+        <section class="readme-panel">
+            <h2 class="font-pixel text-2xl mb-4 text-[#D62828]">MISSION BRIEFING</h2>
+            <div id="readme-content" class="space-y-4 text-lg">
+                <!-- README content will be injected here by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Main Game Library -->
+        <main id="game-library" class="space-y-12">
+            <!-- Game categories and cartridges will be generated here by JavaScript -->
+        </main>
+    </div>
+
+    <!-- Timer Trigger Widget -->
+    <div id="timer-trigger" class="timer-widget no-select">
+        <div id="timer-display" class="font-pixel text-2xl">TIMER</div>
+        <div id="timer-options" class="mt-2 hidden">
+            <button class="timer-btn" data-time="300">5 MIN</button>
+            <button class="timer-btn" data-time="600">10 MIN</button>
+            <button class="timer-btn" data-time="900">15 MIN</button>
+            <button class="timer-btn" data-time="1200">20 MIN</button>
+        </div>
+        <div id="timer-tooltip">
+            <h3 class="font-bold mb-2">💡 FOCUS TIMER</h3>
+            <p>Click me to set a session. This helps you warm-up your brain without getting lost in games. Stay sharp!</p>
+        </div>
+    </div>
+    
+    <!-- Game Modal -->
+    <div id="game-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
+        <div id="game-modal-content" class="w-11/12 h-5/6 max-w-6xl flex flex-col">
+            <div id="game-modal-header" class="p-4 bg-[#2c2c2c] text-white flex justify-between items-center border-b-4 border-[#F1F1F1]">
+                <h2 id="game-modal-title" class="font-pixel text-2xl"></h2>
+                <button id="close-game-modal" class="font-pixel text-2xl">X</button>
+            </div>
+            <div id="game-container" class="w-full h-full"></div>
+        </div>
+    </div>
+    
+    <!-- AI Challenge Window -->
+    <div id="ai-challenge-modal" class="fixed inset-0 bg-black bg-opacity-80 z-[100] items-center justify-center p-4 hidden">
+        <div class="bg-[#F1F1F1] border-4 border-[#2c2c2c] p-8 max-w-2xl w-full text-center relative">
+             <button id="close-ai-modal" class="font-pixel text-xl absolute top-2 right-4">X</button>
+             <div id="ai-challenge-content" class="mt-4 text-xl"></div>
+        </div>
+    </div>
+
+    <!-- Tooltip for Game Information -->
+    <div id="game-info-tooltip"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+             // Data object containing all game information
+             const gameData = {
+                NUMBERS: [
+                    { name: 'SUDOKU.EXE', year: 1979, url: 'https://codepen.io/dovid1234/embed/PZbmMx?default-tab=result&theme-id=default', type: 'iframe', intro: 'A logic-based number-placement puzzle.', benefit: 'Exercises pure logical deduction and pattern recognition.', controls: 'Use your mouse to select a cell and type a number.' },
+                    { name: 'MSTRMIND.EXE', year: 1970, url: 'https://codepen.io/yaylenny/embed/pJMepR', type: 'iframe', intro: 'A classic code-breaking game of logic and deduction.', benefit: 'Trains rigorous logical reasoning and hypothesis testing.', controls: 'Click the colored pegs to form your guess, then press "Check".' },
+                    { name: '2048.EXE', year: 2014, url: 'https://codepen.io/fabi_yo_/embed/zNrmwZ?default-tab=result&theme-id=default', type: 'iframe', intro: 'A sliding puzzle where you combine tiles to reach 2048.', benefit: 'Engages forward-thinking and spatial planning under constraints.', controls: 'Use ARROW KEYS to slide the tiles.' },
+                ],
+                STRATEGY: [
+                    { name: 'CHESS.EXE', year: 1475, url: 'https://codepen.io/viethoang012/embed/xRNgyM?default-tab=result&theme-id=default', type: 'iframe', intro: 'The ultimate abstract strategy game of kings and queens.', benefit: 'Involves deep tactical planning, pattern recognition, and long-term strategy.', controls: 'Click and drag pieces with your mouse.' },
+                    { name: 'REVERSI.EXE', year: 1883, url: 'https://codepen.io/pukie/embed/XNjRdE', type: 'iframe', intro: 'A strategy board game of flipping your opponent\'s pieces.', benefit: 'Teaches positional strategy and how a single move can reverse the game\'s outcome.', controls: 'Click on a valid empty square to place your piece.' },
+                    { name: 'SOLITARE.EXE', year: 1990, url: 'https://codepen.io/bfa/embed/ggGYeE?default-tab=result&theme-id=default', type: 'iframe', intro: 'Classic single-player card game of patience and order.', benefit: 'Tests observation, memory, and probabilistic judgment.', controls: 'Click and drag cards to move them.' },
+                    { name: 'CONNECT4.EXE', year: 1974, url: 'https://codepen.io/coderontheroad/embed/GdxEo?default-tab=result&theme-id=default', type: 'iframe', intro: 'Get four of your colored discs in a row to win.', benefit: 'Involves complex offensive and defensive planning in a simple grid.', controls: 'Click on a column to drop your piece.' },
+                    { name: 'TOWERS.EXE', year: 2007, url: 'https://codepen.io/ScarpMetal/embed/ExGEGZL', type: 'iframe', intro: 'A classic Tower Defense game where you stop waves of enemies.', benefit: 'Exercises resource management, spatial layout, and strategic upgrading.', controls: 'Use your mouse to build and upgrade towers along the path.' }
+                ],
+                REACTION: [
+                    { name: 'TETRIS.EXE', year: 1984, url: 'https://codepen.io/hankuro/embed/pWjBgZ?default-tab=result', type: 'iframe', intro: 'The iconic falling block puzzle game from the Soviet Union.', benefit: 'Tests rapid spatial planning and pattern matching under pressure.', controls: 'LEFT/RIGHT to move, UP to rotate, DOWN to speed up.' },
+                    { name: 'PACMAN.EXE', year: 1980, url: 'https://codepen.io/kudchikarsk/embed/aRaLKR?default-tab=result&theme-id=default', type: 'iframe', intro: 'The classic maze chase game where you eat dots and avoid ghosts.', benefit: 'Engages route planning and pattern recognition against moving opponents.', controls: 'Use ARROW KEYS to move Pac-Man.' },
+                    { name: 'SNAKE.EXE', year: 1976, url: 'https://codepen.io/CaioPaiola/embed/nojJmQ?default-tab=result&theme-id=default', type: 'iframe', intro: 'Control a growing snake to eat food while avoiding crashing into yourself.', benefit: 'A dynamic pathfinding puzzle in an ever-shrinking space.', controls: 'Use ARROW KEYS to change the snake\'s direction.' },
+                    { name: 'BREAKOUT.EXE', year: 1976, url: 'https://codepen.io/kurtkaiser/embed/ZqNNbr?default-tab=result&theme-id=default', type: 'iframe', intro: 'Use a paddle to bounce a ball and clear all the bricks on the screen.', benefit: 'Involves applied geometry, predicting angles and rebounds.', controls: 'Move your MOUSE left and right to control the paddle.' },
+                    { name: 'ASTEROID.EXE', year: 1979, url: 'https://archive.org/embed/Asteroids_1987_Atari_NTSC', type: 'iframe', intro: 'Fly a ship in a dangerous asteroid field and destroy space rocks.', benefit: 'Demands multitasking, risk assessment, and Newtonian physics control.', controls: 'LEFT/RIGHT to rotate, UP to thrust, SPACE to shoot.' }
+                ],
+                PUZZLE: [
+                    { name: 'MINESWPR.EXE', year: 1989, url: 'https://archive.org/embed/MinesweeperMacintosh', type: 'iframe', intro: 'A logic puzzle to clear a board without detonating hidden mines.', benefit: 'A textbook application of deduction and the process of elimination.', controls: 'LEFT-CLICK to reveal a square. RIGHT-CLICK to flag a mine.' },
+                    { name: 'SOKOBAN.EXE', year: 1982, url: 'https://archive.org/embed/Sokoban_1020', type: 'iframe', intro: 'Push boxes to their designated storage locations in a warehouse.', benefit: 'A pure test of spatial planning and foresight, as moves can be irreversible.', controls: 'Use ARROW KEYS to move the character.' },
+                    { name: 'SLIDEPZL.EXE', year: 1880, url: 'https://archive.org/embed/SlidingPuzzle_1020', type: 'iframe', intro: 'The classic tile puzzle where you must restore order.', benefit: 'Tests spatial relationship understanding and step-by-step planning.', controls: 'Click on a tile next to the empty space to move it.' },
+                    { name: 'MEMORY.EXE', year: 1959, url: 'https://codepen.io/M_J_Robbins/embed/VeNWQQ', type: 'iframe', intro: 'Match pairs of hidden cards by remembering their locations.', benefit: 'A direct exercise for short-term visual and spatial memory.', controls: 'Click on cards to reveal them and find pairs.' },
+                    { name: 'MATCH3.EXE', year: 2001, url: 'https://codepen.io/uname79/embed/yLLxqPo', type: 'iframe', intro: 'Swap adjacent gems or items to create sets of three or more.', benefit: 'Focuses on pattern recognition and short-term opportunistic planning.', controls: 'Click and drag an item to swap it with an adjacent one.' }
+                ],
+                TEXT_ADVENTURES: [
+                    { name: 'ZORK.EXE', year: 1977, url: 'https://archive.org/embed/msdos_Zork_I_-_The_Great_Underground_Empire_1980', type: 'iframe', intro: 'Explore the Great Underground Empire and hunt for treasure.', benefit: 'Exercises imagination and logic through a text parser.', controls: 'Type commands like "go north", "take lamp", "examine sword".' },
+                    { name: 'ADVENT.EXE', year: 1976, url: 'https://archive.org/embed/msdos_Classic_Adventure_-_The_Original_Colossal_Cave_1996', type: 'iframe', intro: 'The original text adventure game that started it all.', benefit: 'Its core puzzle is mapping a complex space and discovering magic words.', controls: 'Type one or two-word commands to interact.' },
+                    { name: 'LOSTPIG.EXE', year: 2007, url: 'https://iplayif.com/?story=http://www.ifarchive.org/if-archive/games/zcode/LostPig.z8', type: 'iframe', intro: 'A humorous short story where you try to find a lost pig.', benefit: 'Features clever and charming logic puzzles based on interaction.', controls: 'Type commands to interact with the world.' },
+                    { name: '905.EXE', year: 2000, url: 'https://iplayif.com/?story=http://www.ifarchive.org/if-archive/games/zcode/905.z5', type: 'iframe', intro: 'A minimalist one-room puzzle about escaping your office routine.', benefit: 'Tests observation and creative item use in a confined space.', controls: 'Type commands to interact with objects.' },
+                    { name: 'PHOTOPIA.EXE', year: 1998, url: 'https://iplayif.com/?story=http://www.ifarchive.org/if-archive/games/zcode/photopia.z5', type: 'iframe', intro: 'A non-linear story puzzle where you piece together a narrative.', benefit: 'The main puzzle is understanding the story. Minimal interaction.', controls: 'Press any key to advance the text.' }
+                ]
+            };
+
+            const readmeContent = `
+<p class="text-lg leading-relaxed">This is not just a game collection; it's a pre-work warm-up tool based on principles of cognitive neuroscience. It helps you overcome procrastination, improve focus, and contributes to long-term brain health.</p>
+<h3 class="font-pixel text-xl mt-6 mb-2 text-[#003049]">THE SCIENCE:</h3>
+<ul class="list-disc list-inside space-y-2">
+    <li><strong>Dopamine Primer</strong>: A short game releases dopamine, the molecule of motivation, lowering the mental barrier to starting difficult tasks.</li>
+    <li><strong>Cognitive Warm-Up</strong>: Activates neural circuits for attention and problem-solving, preparing you for deep work.</li>
+    <li><strong>Cognitive Reserve</strong>: Regular engagement helps protect against age-related cognitive decline.</li>
+</ul>
+<h3 class="font-pixel text-xl mt-6 mb-2 text-[#003049]">REFERENCE LINKS:</h3>
+<ul class="list-disc list-inside space-y-2 text-blue-800">
+    <li><a href="https://www.hubermanlab.com/topics/focus-and-concentration" target="_blank" class="hover:underline">Huberman Lab | Focus & Concentration Topic Page</a></li>
+    <li><a href="https://www.youtube.com/watch?v=K-TW2Chpz4k" target="_blank" class="hover:underline">Huberman Lab | Leverage Dopamine to Overcome Procrastination</a></li>
+    <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10632698/" target="_blank" class="hover:underline">Study | Tablet-Based Puzzle Game Intervention for Cognitive Function</a></li>
+</ul>
+            `;
+            document.getElementById('readme-content').innerHTML = readmeContent;
+            
+            const gameLibrary = document.getElementById('game-library');
+            const gameInfoTooltip = document.getElementById('game-info-tooltip');
+            
+            // --- Sound Effect Setup ---
+            const synth = new Tone.Synth({
+                oscillator: { type: 'square' },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0.2, release: 0.1 }
+            }).toDestination();
+
+            function playSound() {
+                synth.triggerAttackRelease("C4", "8n");
+            }
+            
+            // Populate the game library dynamically
+            for (const category in gameData) {
+                const section = document.createElement('section');
+                section.id = category.toLowerCase();
+                
+                const header = document.createElement('h2');
+                header.className = 'category-header font-pixel text-3xl mb-8';
+                header.textContent = category;
+                section.appendChild(header);
+
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8';
+                
+                gameData[category].forEach(game => {
+                    const cartridge = document.createElement('div');
+                    cartridge.className = 'game-cartridge flex flex-col justify-between';
+                    cartridge.innerHTML = `
+                        <div class="cartridge-label p-4 flex-grow flex items-center justify-center">
+                            <span class="font-pixel text-lg text-center">${game.name.replace('.EXE', '')}</span>
+                        </div>
+                        <div class="cartridge-grip p-2">
+                            <div class="grip-line"></div><div class="grip-line"></div><div class="grip-line"></div>
+                        </div>
+                    `;
+                    cartridge.addEventListener('dblclick', () => {
+                        playSound();
+                        launchGame(game.name, game.url);
+                    });
+                    
+                    cartridge.addEventListener('mouseover', () => {
+                        const tooltipContent = `YEAR: ${game.year}\nINTRO: ${game.intro}\nBENEFIT: ${game.benefit}\n\nCONTROLS:\n${game.controls}`;
+                        gameInfoTooltip.innerText = tooltipContent;
+                        gameInfoTooltip.style.display = 'block';
+                    });
+
+                    cartridge.addEventListener('mousemove', (e) => {
+                        gameInfoTooltip.style.left = e.pageX + 15 + 'px';
+                        gameInfoTooltip.style.top = e.pageY + 15 + 'px';
+                    });
+
+                    cartridge.addEventListener('mouseout', () => {
+                        gameInfoTooltip.style.display = 'none';
+                    });
+
+                    grid.appendChild(cartridge);
+                });
+
+                section.appendChild(grid);
+                gameLibrary.appendChild(section);
+            }
+
+            // Game Modal Logic
+            const gameModal = document.getElementById('game-modal');
+            const gameModalTitle = document.getElementById('game-modal-title');
+            const gameContainer = document.getElementById('game-container');
+            const closeGameModalBtn = document.getElementById('close-game-modal');
+
+            function launchGame(name, url) {
+                gameModalTitle.textContent = name;
+                gameContainer.innerHTML = `<iframe src="${url}" class="w-full h-full" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>`;
+                gameModal.style.display = 'flex';
+            }
+
+            closeGameModalBtn.addEventListener('click', () => {
+                gameContainer.innerHTML = '';
+                gameModal.style.display = 'none';
+            });
+
+             // Timer Logic
+            const timerTrigger = document.getElementById('timer-trigger');
+            const timerOptions = document.getElementById('timer-options');
+            let timerInterval;
+
+            timerTrigger.addEventListener('click', (e) => {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                timerOptions.classList.toggle('hidden');
+                e.stopPropagation();
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!timerTrigger.contains(e.target)) {
+                    timerOptions.classList.add('hidden');
+                }
+            });
+
+            timerOptions.querySelectorAll('.timer-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
+                    const time = parseInt(e.target.dataset.time);
+                    createTimerWindow(time);
+                    timerOptions.classList.add('hidden');
+                });
+            });
+            
+            function createTimerWindow(duration) {
+                let existingTimerWindow = document.getElementById('floating-timer-window');
+                if(existingTimerWindow) {
+                    clearInterval(timerInterval);
+                    existingTimerWindow.remove();
+                }
+                if(duration === 0) return;
+
+                const timerWindow = document.createElement('div');
+                timerWindow.id = 'floating-timer-window';
+                timerWindow.className = 'floating-timer-window';
+                timerWindow.style.left = '50%';
+                timerWindow.style.top = '20px';
+                timerWindow.style.transform = 'translateX(-50%)';
+
+                let timeRemaining = duration;
+
+                timerWindow.innerHTML = `
+                    <div class="timer-window-header">
+                       <span class="timer-window-title font-pixel text-sm">SESSION</span>
+                       <button class="timer-window-close">X</button>
+                    </div>
+                    <div class="timer-display font-pixel text-4xl"></div>
+                `;
+                document.body.appendChild(timerWindow);
+                timerWindow.style.display = 'block';
+
+                const display = timerWindow.querySelector('.timer-display');
+                
+                const updateDisplay = () => {
+                    const minutes = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+                    const seconds = (timeRemaining % 60).toString().padStart(2, '0');
+                    display.textContent = `${minutes}:${seconds}`;
+                };
+                
+                updateDisplay();
+
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    updateDisplay();
+                    // --- UPDATED: Timer end behavior ---
+                    if (timeRemaining < 0) {
+                        clearInterval(timerInterval);
+                        display.textContent = "00:00"; // Ensure final state is 00:00
+                        timerWindow.classList.add('timer-flash'); // Add flashing animation
+                        // No longer calls endSession() or removes the window
+                    }
+                }, 1000);
+                
+                timerWindow.querySelector('.timer-window-close').addEventListener('click', () => {
+                    clearInterval(timerInterval);
+                    timerWindow.remove();
+                });
+                
+                makeTimerDraggable(timerWindow);
+            }
+            
+            function makeTimerDraggable(element) {
+                let isDragging = false, offsetX, offsetY;
+                const header = element.querySelector('.timer-window-header');
+
+                header.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    offsetX = e.clientX - element.offsetLeft;
+                    offsetY = e.clientY - element.offsetTop;
+                    document.body.style.userSelect = 'none';
+                });
+                document.addEventListener('mousemove', (e) => {
+                    if(!isDragging) return;
+                    element.style.left = `${e.clientX - offsetX}px`;
+                    element.style.top = `${e.clientY - offsetY}px`;
+                    element.style.transform = '';
+                });
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    document.body.style.userSelect = '';
+                });
+            }
+
+            // This function is now only called if manually triggered in the future
+            function endSession() {
+                gameModal.style.display = 'none';
+                gameContainer.innerHTML = '';
+                showAiChallenge();
+            }
+
+            const aiChallengeModal = document.getElementById('ai-challenge-modal');
+            const aiChallengeContent = document.getElementById('ai-challenge-content');
+            const closeAiModalBtn = document.getElementById('close-ai-modal');
+            
+            closeAiModalBtn.addEventListener('click', () => {
+                aiChallengeModal.style.display = 'none';
+            });
+
+            async function showAiChallenge() {
+                aiChallengeContent.innerHTML = '<p class="font-pixel animate-pulse">GENERATING MISSION...</p>';
+                aiChallengeModal.style.display = 'flex';
+
+                const prompt = "You are a productivity expert with a creative, slightly quirky personality. Generate a single, actionable, non-digital focus challenge for a person who just finished a brain-training session. The challenge should be completable in 15-30 minutes and designed to improve real-world focus or creativity. Frame it as a 'MISSION'.";
+                const challengeText = await callGemini(prompt);
+                aiChallengeContent.innerHTML = `<h3 class="font-pixel text-2xl mb-4 text-[#D62828]">MISSION BRIEFING</h3><p class="text-left">${challengeText}</p>`;
+            }
+
+            async function callGemini(prompt) {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) return `//ERROR: Network response was not ok. Status: ${response.status}//`;
+                    const result = await response.json();
+                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts) {
+                        return result.candidates[0].content.parts[0].text;
+                    }
+                    return "//ERROR: Invalid response structure from AI.//";
+                } catch (error) {
+                    console.error("Error calling Gemini API:", error);
+                    return `//ERROR: Connection failed to AI core. Please check console.//`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
