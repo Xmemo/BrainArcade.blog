@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Brain Arcade: Classic Retro Games for Brain Training & Focus</title>
+    <meta name="description" content="Play classic retro games in a distraction-free environment. Use our timer to warm-up your brain, improve focus, and get ready for deep work. Based on neuroscience.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAAEQSURBVHjarVNBUoQwDOu2bdu2bX+aJESKQuwQ3sdeRE/gD3im3ufpTRr0TCImJGQxP/EV3EPMO2/vLzCAlwCLwA3YImfMuzM5Gz2kBCwCW/FFsE4A7AnwA8D02KKLwA44A48HIsAH8ApMwoAVsPcy7Zqg8gG4AnMh8D/wzAXkE5AEpBMQe4PvaTS/aYTgLpCki+YSsPo7oRgzOPiCgXcFwKdgbxVo3/sV0J+I/xog7wSgD6A+hMFx/CgD+wBcAj4c173yD0AiyH2PVAXgApBvgK8/a4bA68K8rXQcgf8AX4a/sC0b/I/AV4t/ANwGvE0sBwH+gI0DVwA8A/x12+u+yREwFvALsAN8A/gBfP6vXQAAAABJRU5ErkJggg==">
+
+    <style>
+        body { background-color: #F1F1F1; color: #2c2c2c; font-family: 'VT323', monospace; }
+        .font-pixel { font-family: 'Press Start 2P', cursive; }
+        .game-card {
+            background-color: #EAEAEA; border: 4px solid #2c2c2c;
+            box-shadow: 8px 8px 0px #9d9d9d;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            image-rendering: pixelated;
+        }
+        .game-card:hover { transform: translate(4px, 4px); box-shadow: 4px 4px 0px #9d9d9d; }
+        .btn-pixel {
+            background-color: #4CAF50; color: white;
+            border: 4px solid #2c2c2c; padding: 10px 20px;
+            box-shadow: 4px 4px 0px #2c2c2c;
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+        .btn-pixel:active, .btn-pixel-red:active { transform: translate(4px, 4px); box-shadow: none; }
+        .btn-pixel-red {
+             background-color: #E53935; color: white;
+            border: 4px solid #2c2c2c; padding: 10px 20px;
+            box-shadow: 4px 4px 0px #2c2c2c;
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+        .timer-display { font-size: 3rem; }
+        #game-modal { display: none; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <main>
+        <div class="text-center mb-12">
+            <h1 class="font-pixel text-3xl mb-4">Brain Arcade</h1>
+            <p class="text-lg md:text-xl max-w-3xl mx-auto">
+                Welcome to Brain Arcade. Select a game to warm-up your brain for deep work. 
+                Each game is chosen to enhance specific cognitive functions. Click any game to see the science behind it.
+            </p>
+        </div>
+
+        <div id="game-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 md:gap-8">
+            <!-- Game cards will be injected here by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Game Dossier Modal -->
+    <div id="game-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="content-panel w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-200 border-4 border-black p-6 shadow-lg" style="box-shadow: 12px 12px 0px #2c2c2c;">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 id="modal-title" class="font-pixel text-2xl md:text-3xl"></h2>
+                    <p id="modal-year" class="text-lg"></p>
+                </div>
+                <button id="close-modal" class="font-pixel text-2xl" >&times;</button>
+            </div>
+            
+            <div class="md:flex md:space-x-6">
+                <img id="modal-img" src="" alt="Game cartridge" class="w-48 h-48 mx-auto md:mx-0 mb-4 md:mb-0" style="image-rendering: pixelated;"/>
+                <div class="flex-1">
+                    <h3 class="font-pixel text-lg mb-2">Cognitive Benefit:</h3>
+                    <p id="modal-benefit" class="mb-4 text-lg"></p>
+                    
+                    <h3 class="font-pixel text-lg mb-2">The Science:</h3>
+                    <p id="modal-science" class="mb-6 text-lg"></p>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-end">
+                <a id="modal-read-more" href="#" class="btn-pixel !bg-blue-600 text-center">Read More &raquo;</a>
+                <button id="modal-start-game" class="btn-pixel">START MISSION</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Iframe -->
+    <div id="game-container" class="fixed inset-0 bg-black z-50 hidden">
+        <iframe id="game-iframe" class="w-full h-full" frameborder="0"></iframe>
+        <button id="close-game" class="absolute top-4 right-4 text-white font-pixel text-xl bg-red-600 px-4 py-2 border-2 border-white">QUIT</button>
+    </div>
+
+    <script>
+        const games = [
+            {
+                id: "TETRIS",
+                name: "TETRIS.EXE",
+                year: "1984",
+                img: "https://raw.githubusercontent.com/Xmemo/BrainArcade.blog/main/assets/tetris.png",
+                url: "https://xmemo.github.io/DOS-Games/index.html?game=tetris",
+                benefit: "Builds superior spatial reasoning skills.",
+                science: "MRI studies show that playing Tetris can physically alter brain structure. A 2024 meta-analysis also found puzzle games to be highly effective tools for cognitive development.",
+                article_slug: "puzzle-spatial-reasoning"
+            },
+            {
+                id: "SUDOKU",
+                name: "SUDOKU.EXE",
+                year: "1986",
+                img: "https://raw.githubusercontent.com/Xmemo/BrainArcade.blog/main/assets/sudoku.png",
+                url: "https://xmemo.github.io/DOS-Games/index.html?game=sudoku",
+                benefit: "Exercises logic, reasoning, and processing speed.",
+                science: "A study in the *International Journal of Geriatric Psychiatry* found that in adults over 50, regular play of number puzzles is linked to brain function equivalent to ten years younger.",
+                article_slug: "digital-logic-games"
+            },
+            {
+                id: "CHESS",
+                name: "CHESS.EXE",
+                year: "1974",
+                img: "https://raw.githubusercontent.com/Xmemo/BrainArcade.blog/main/assets/chess.png",
+                url: "https://xmemo.github.io/DOS-Games/index.html?game=chess",
+                benefit: "Develops executive functions and long-term planning.",
+                science: "Neuroimaging research reveals that chess experts develop unique brain structures to handle challenges in problem-solving and memory.",
+                article_slug: "strategy-games"
+            },
+            {
+                id: "PONG",
+                name: "PONG.EXE",
+                year: "1972",
+                img: "https://raw.githubusercontent.com/Xmemo/BrainArcade.blog/main/assets/pong.png",
+                url: "https://xmemo.github.io/DOS-Games/index.html?game=pong",
+                benefit: "Hones reaction time and top-down attentional control.",
+                science: "A major 2023 meta-analysis confirmed that action games causally improve cognitive skills, especially the brain's ability to focus and filter information.",
+                article_slug: "action-reaction-games"
+            },
+            {
+                id: "ZORK",
+                name: "ZORK.EXE",
+                year: "1977",
+                img: "https://raw.githubusercontent.com/Xmemo/BrainArcade.blog/main/assets/zork.png",
+                url: "https://xmemo.github.io/DOS-Games/index.html?game=zork",
+                benefit: "Cultivates empathy and complex decision-making skills.",
+                science: "Research shows that making choices within a story significantly enhances your empathetic abilities and helps you reflect on complex real-world problems.",
+                article_slug: "narrative-interactive-fiction"
+            },
+             {
+                id: "PACMAN",
+                name: "PACMAN.EXE",
+                year: "1980",
+                img: "https://raw.githubusercontent.com/Xmemo/BrainArcade.blog/main/assets/pacman.png",
+                url: "https://xmemo.github.io/DOS-Games/index.html?game=pacman",
+                benefit: "Improves planning and spatial awareness under pressure.",
+                science: "Navigating mazes requires constant planning and re-evaluation, key components of cognitive flexibility, a core executive function.",
+                article_slug: "strategy-games"
+            },
+            {
+                id: "SOKOBAN",
+                name: "SOKOBAN.EXE",
+                year: "1982",
+                img: "https://raw.githubusercontent.com/Xmemo/BrainArcade.blog/main/assets/sokoban.png",
+                url: "https://xmemo.github.io/DOS-Games/index.html?game=sokoban",
+                benefit: "Enhances problem-solving and visuospatial working memory.",
+                science: "Puzzle games are powerful tools for developing core cognitive skills, with a 2024 meta-analysis finding them to be the most effective game type for promoting cognitive development.",
+                article_slug: "puzzle-spatial-reasoning"
+            },
+            {
+                id: "DOOM",
+                name: "DOOM.EXE",
+                year: "1993",
+                img: "https://raw.githubusercontent.com/Xmemo/BrainArcade.blog/main/assets/doom.png",
+                url: "https://xmemo.github.io/DOS-Games/index.html?game=doom",
+                benefit: "Charges up processing speed and sharpens visual attention.",
+                science: "EEG studies show that action gamers process visual information faster, a result linked to more efficient neural activity patterns for attentional control.",
+                article_slug: "action-reaction-games"
+            }
+        ];
+
+        const gameGrid = document.getElementById('game-grid');
+        const modal = document.getElementById('game-modal');
+        const closeModalBtn = document.getElementById('close-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalYear = document.getElementById('modal-year');
+        const modalImg = document.getElementById('modal-img');
+        const modalBenefit = document.getElementById('modal-benefit');
+        const modalScience = document.getElementById('modal-science');
+        const modalReadMore = document.getElementById('modal-read-more');
+        const modalStartGame = document.getElementById('modal-start-game');
+        
+        const gameContainer = document.getElementById('game-container');
+        const gameIframe = document.getElementById('game-iframe');
+        const closeGameBtn = document.getElementById('close-game');
+
+        let currentGameUrl = '';
+
+        function createGameCard(game) {
+            const card = document.createElement('div');
+            card.className = 'game-card p-4 text-center cursor-pointer';
+            card.innerHTML = `
+                <img src="${game.img}" alt="${game.name}" class="w-full h-auto object-cover mb-4">
+                <h2 class="font-pixel text-sm md:text-base">${game.name}</h2>
+                <p class="text-xs md:text-sm">${game.year}</p>
+            `;
+            card.addEventListener('click', () => openModal(game));
+            return card;
+        }
+
+        function openModal(game) {
+            modalTitle.textContent = game.name;
+            modalYear.textContent = game.year;
+            modalImg.src = game.img;
+            modalBenefit.textContent = game.benefit;
+            modalScience.textContent = game.science;
+            modalReadMore.href = `/articles/${game.article_slug}.html`;
+            currentGameUrl = game.url;
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+        
+        function startGame() {
+            closeModal();
+            gameIframe.src = currentGameUrl;
+            gameContainer.style.display = 'block';
+        }
+
+        function closeGame() {
+            gameIframe.src = 'about:blank'; // Stop the game
+            gameContainer.style.display = 'none';
+        }
+
+        games.forEach(game => {
+            gameGrid.appendChild(createGameCard(game));
+        });
+
+        closeModalBtn.addEventListener('click', closeModal);
+        modalStartGame.addEventListener('click', startGame);
+        closeGameBtn.addEventListener('click', closeGame);
+        
+        // Close modal if clicking outside of the content panel
+        window.addEventListener('click', (event) => {
+            if (event.target == modal) {
+                closeModal();
+            }
+        });
+
+    </script>
+
+</body>
+</html>
